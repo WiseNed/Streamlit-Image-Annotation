@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "streamlit_image_annotation"
+name = "image_location_processer"
 version = "0.7.2"
 description = "streamlit components for image annotation"
 readme = "README.md"

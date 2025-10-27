@@ -5,7 +5,6 @@ import Konva from 'konva';
 
 export interface BBoxCanvasLayerProps {
   rectangles: any[],
-  mode: string,
   selectedId: string | null,
   setSelectedId: any,
   setRectangles: any,
@@ -20,7 +19,6 @@ export interface BBoxCanvasLayerProps {
 const BBoxCanvas = (props: BBoxCanvasLayerProps) => {
   const {
     rectangles,
-    mode,
     selectedId,
     setSelectedId,
     setRectangles,
@@ -37,10 +35,8 @@ const BBoxCanvas = (props: BBoxCanvasLayerProps) => {
     console.log('DOWN')
     if (!(e.target instanceof Konva.Rect)) {
       if (selectedId === null) {
-        if (mode === 'Transform') {
-          const pointer = e.target.getStage().getPointerPosition()
-          setAdding([pointer.x, pointer.y, pointer.x, pointer.y])
-        }
+        const pointer = e.target.getStage().getPointerPosition()
+        setAdding([pointer.x, pointer.y, pointer.x, pointer.y])
       } else {
         setSelectedId(null);
       }
@@ -94,8 +90,12 @@ const BBoxCanvas = (props: BBoxCanvasLayerProps) => {
       onMouseUp={(e: any) => {
         if (!(adding === null)) {
           const rects = rectangles.slice();
+          
+          // Remove any existing boxes with the same label (single box per class)
+          const filteredRects = rects.filter(rect => rect.label !== label);
+          
           const new_id = Date.now().toString()
-          rects.push({
+          const newRect = {
             x: adding[0] / scale,
             y: adding[1] / scale,
             width: (adding[2] - adding[0]) / scale,
@@ -103,8 +103,11 @@ const BBoxCanvas = (props: BBoxCanvasLayerProps) => {
             label: label,
             stroke: color_map[label],
             id: new_id
-          })
-          setRectangles(rects);
+          }
+          
+          // Add the new box to the filtered list
+          filteredRects.push(newRect);
+          setRectangles(filteredRects);
           setSelectedId(new_id);
           setAdding(null)
         }
@@ -120,21 +123,16 @@ const BBoxCanvas = (props: BBoxCanvasLayerProps) => {
               rectProps={rect}
               scale={scale}
               strokeWidth={strokeWidth}
-              isSelected={mode === 'Transform' && rect.id === selectedId}
+              isSelected={rect.id === selectedId}
               onClick={() => {
-                if (mode === 'Transform') {
-                  setSelectedId(rect.id);
-                  const rects = rectangles.slice();
-                  const lastIndex = rects.length - 1;
-                  const lastItem = rects[lastIndex];
-                  rects[lastIndex] = rects[i];
-                  rects[i] = lastItem;
-                  setRectangles(rects);
-                  setLabel(rect.label)
-                } else if (mode === 'Del') {
-                  const rects = rectangles.slice();
-                  setRectangles(rects.filter((element) => element.id !== rect.id));
-                }
+                setSelectedId(rect.id);
+                const rects = rectangles.slice();
+                const lastIndex = rects.length - 1;
+                const lastItem = rects[lastIndex];
+                rects[lastIndex] = rects[i];
+                rects[i] = lastItem;
+                setRectangles(rects);
+                setLabel(rect.label)
               }}
               onChange={(newAttrs: any) => {
                 const rects = rectangles.slice();

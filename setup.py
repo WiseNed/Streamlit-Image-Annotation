@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="streamlit_image_annotation",
+    name="image_location_processer",
     version="0.7.2",
     author="hirune924",
     description="streamlit components for image annotation",

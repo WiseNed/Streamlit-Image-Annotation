@@ -4,7 +4,8 @@ import {
   ComponentProps
 } from "streamlit-component-lib"
 import React, { useEffect, useState } from "react"
-import { ChakraProvider, Select, Box, Spacer, HStack, Center, Button, Text } from '@chakra-ui/react'
+import { ChakraProvider, Select, Box, HStack, Center, Button, Text } from '@chakra-ui/react'
+import { CheckIcon } from '@chakra-ui/icons'
 
 import useImage from 'use-image';
 
@@ -65,7 +66,10 @@ const Detection = ({ args, theme }: ComponentProps) => {
     }));
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [label, setLabel] = useState(label_list[0])
-  const [mode, setMode] = React.useState<string>('Transform');
+
+  // Calculate which classes don't have bounding boxes yet
+  const classesWithBoxes = rectangles.map(rect => rect.label);
+  const missingClasses = label_list.filter(label => !classesWithBoxes.includes(label));
 
   const handleClassSelectorChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setLabel(event.target.value)
@@ -115,17 +119,10 @@ const Detection = ({ args, theme }: ComponentProps) => {
     <ChakraProvider>
       <ThemeSwitcher theme={theme}>
         <Center>
-          <HStack>
-            <Box>
-              <Text fontSize='sm'>Mode</Text>
-              <Select value={mode} onChange={(e) => { setMode(e.target.value) }}>
-                {['Transform', 'Del'].map(
-                  (m) =>
-                    <option value={m}>{m}</option>
-                )}
-              </Select>
-              <Text fontSize='sm'>Choose Field To Draw</Text>
-              <Select value={label} onChange={handleClassSelectorChange}>
+          <HStack width="100%" spacing={4} align="flex-start">
+            <Box flex="0 0 auto" minWidth="200px" maxWidth="300px">
+              <Text fontSize='sm' mb={2}>Class</Text>
+              <Select value={label} onChange={handleClassSelectorChange} width="100%" mb={4}>
                 {label_list.map(
                   (l) =>
                     <option value={l}>{l}</option>
@@ -133,22 +130,50 @@ const Detection = ({ args, theme }: ComponentProps) => {
                 }
               </Select>
 
-              <Button onClick={(e) => {
-                const currentBboxValue = rectangles.map((rect, i) => {
-                  return {
-                    bbox: [rect.x, rect.y, rect.width, rect.height],
-                    label_id: label_list.indexOf(rect.label),
-                    label: rect.label
-                  }
-                })
-                Streamlit.setComponentValue(currentBboxValue)
-              }}>Process Field Positions</Button>
+              <Button 
+                onClick={(e) => {
+                  const currentBboxValue = rectangles.map((rect, i) => {
+                    return {
+                      bbox: [rect.x, rect.y, rect.width, rect.height],
+                      label_id: label_list.indexOf(rect.label),
+                      label: rect.label
+                    }
+                  })
+                  Streamlit.setComponentValue(currentBboxValue)
+                }} 
+                width="100%" 
+                mb={4}
+                isDisabled={missingClasses.length > 0}
+                colorScheme={missingClasses.length > 0 ? "gray" : "blue"}
+                leftIcon={<CheckIcon />}
+              >
+                {missingClasses.length > 0 ? "Complete (Missing Fields)" : "Complete"}
+              </Button>
+
+              {/* Missing Classes Warning Box */}
+              {missingClasses.length > 0 && (
+                <Box
+                  bg="red.50"
+                  border="1px solid"
+                  borderColor="red.200"
+                  borderRadius="md"
+                  p={3}
+                  width="100%"
+                >
+                  <Text fontSize="sm" color="red.700" fontWeight="medium" mb={2}>
+                    You've Not yet set the positions for the below fields:
+                  </Text>
+                  {missingClasses.map((className) => (
+                    <Text key={className} fontSize="xs" color="red.600" ml={2}>
+                      • {className}
+                    </Text>
+                  ))}
+                </Box>
+              )}
             </Box>
-            <Spacer />
-            <Box width="80%">
+            <Box flex="1">
               <BBoxCanvas
                 rectangles={rectangles}
-                mode={mode}
                 selectedId={selectedId}
                 scale={scale}
                 setSelectedId={setSelectedId}
