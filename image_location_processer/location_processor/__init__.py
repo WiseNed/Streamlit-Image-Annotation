@@ -1,7 +1,7 @@
 import os
 import streamlit.components.v1 as components
 from streamlit.components.v1.components import CustomComponent
-from typing import List
+from typing import List, Union
 from packaging import version
 
 import streamlit as st
@@ -53,12 +53,12 @@ def get_colormap(label_names, colormap_name='gist_rainbow'):
 #labels:
 #[0,3]
 #'''
-def detection(image_path, field_definitions, height=512, width=512, line_width=5.0, use_space=False, key=None) -> CustomComponent:
+def detection(image_input: Union[str, Image.Image], field_definitions, height=512, width=512, line_width=5.0, use_space=False, key=None) -> CustomComponent:
     """
     Detects bounding boxes for given field definitions.
     
     Args:
-        image_path: Path to the image
+        image_input: Path to the image file (str) or PIL Image object
         field_definitions: Dictionary mapping field names to their definitions.
                          Can be either:
                          - Initial definitions: {"RED": {"classification": "abc"}, ...}
@@ -74,7 +74,10 @@ def detection(image_path, field_definitions, height=512, width=512, line_width=5
         Preserves all original fields and adds bbox and label_id.
         e.g., {"RED": {"classification": "abc", "label_id": 0, "bbox": {"x": ..., "y": ..., "width": ..., "height": ...}}, ...}
     """
-    image = Image.open(image_path)
+    if isinstance(image_input, str):
+        image = Image.open(image_input)
+    else:
+        image = image_input.copy()  # Create a copy to avoid modifying the original
     original_image_size = image.size
     image.thumbnail(size=(width, height))
     resized_image_size = image.size
